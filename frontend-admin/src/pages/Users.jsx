@@ -48,12 +48,12 @@ const initUsers = [
   },
 ]
 
-const planBadge = { Monthly:'badge-purple', Annual:'badge-blue', Weekly:'badge-green', Free:'badge-amber' }
+const roleBadge = { free:'badge-amber', member:'badge-purple', admin:'badge-red', sub_admin:'badge-blue' }
 
 function UserProfileModal({ open, onClose, user }) {
   const [tab, setTab] = useState('profile')
   if (!user || !open) return null
-  const tabs = ['profile','subscription','watch','wallet','referrals','activity']
+  const tabs = ['profile','subscription','watch','wallet','activity']
   return (
     <Modal open={open} onClose={onClose} title={`User Profile — ${user.name}`} width={640}>
       <div style={{ display:'flex', gap:0, marginBottom:20, borderBottom:'1px solid var(--border)' }}>
@@ -85,7 +85,7 @@ function UserProfileModal({ open, onClose, user }) {
             {[
               { label:'User ID', value:user.id },
               { label:'Joined', value:user.joined },
-              { label:'Plan', value:user.plan },
+              { label:'Role', value:user.role },
               { label:'Coin balance', value:`₵ ${user.coins.toLocaleString()}` },
             ].map(r => (
               <div key={r.label} style={{ background:'var(--bg3)', padding:'10px 14px', borderRadius:8 }}>
@@ -102,7 +102,7 @@ function UserProfileModal({ open, onClose, user }) {
           <div style={{ background:'var(--bg3)', padding:16, borderRadius:8, marginBottom:16 }}>
             <div style={{ fontSize:11, color:'var(--text3)', marginBottom:4 }}>CURRENT PLAN</div>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span className={`badge ${planBadge[user.plan]}`} style={{ fontSize:14, padding:'4px 12px' }}>{user.plan}</span>
+              <span className={`badge ${roleBadge[user.role]}`} style={{ fontSize:14, padding:'4px 12px' }}>{user.plan}</span>
               <div style={{ textAlign:'right' }}>
                 <div style={{ fontSize:12, color:'var(--text3)' }}>Expires</div>
                 <div style={{ fontWeight:500 }}>{user.subExpiry}</div>
@@ -146,12 +146,7 @@ function UserProfileModal({ open, onClose, user }) {
         </div>
       )}
 
-      {tab==='referrals' && (
-        <div style={{ textAlign:'center', padding:'30px 0' }}>
-          <div style={{ fontSize:36, fontWeight:700, fontFamily:'var(--mono)', color:'var(--accent2)', marginBottom:8 }}>{user.referrals}</div>
-          <div style={{ color:'var(--text3)', fontSize:13 }}>successful referrals · {user.referrals*100} coins earned</div>
-        </div>
-      )}
+
 
       {tab==='activity' && (
         <div>
@@ -211,7 +206,7 @@ export default function Users() {
 
   const filtered = users.filter(u => {
     const m = u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase()) || u.id.toLowerCase().includes(q.toLowerCase()) || u.mobile.includes(q)
-    const f = filter==='All' || (filter==='Blocked'?u.status==='Blocked':filter==='Paid'?u.plan!=='Free':filter==='Free'?u.plan==='Free':true)
+    const f = filter==='All' || (filter==='Blocked'?u.status==='Blocked':filter==='Member'?u.role==='member':filter==='Free'?u.role==='free':filter==='Admin'?(u.role==='admin'||u.role==='sub_admin'):true)
     return m && f
   })
 
@@ -225,7 +220,7 @@ export default function Users() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
         <div>
           <div style={{ fontWeight:600 }}>{users.length} registered users</div>
-          <div style={{ fontSize:12, color:'var(--text3)' }}>{users.filter(u=>u.status==='Active').length} active · {users.filter(u=>u.plan!=='Free').length} paid</div>
+          <div style={{ fontSize:12, color:'var(--text3)' }}>{users.filter(u=>u.status==='Active').length} active · {users.filter(u=>u.role==='member').length} members</div>
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <button className="btn btn-ghost"><Download size={13}/> Export CSV</button>
@@ -238,7 +233,7 @@ export default function Users() {
           <Search size={14} className="search-icon"/>
           <input className="input" style={{ paddingLeft:32 }} placeholder="Search by name, email, ID, mobile…" value={q} onChange={e=>setQ(e.target.value)}/>
         </div>
-        {['All','Free','Paid','Blocked'].map(f => (
+        {['All','Free','Member','Admin','Blocked'].map(f => (
           <button key={f} className={`btn ${filter===f?'btn-primary':'btn-ghost'} btn-sm`} onClick={() => setFilter(f)}>{f}</button>
         ))}
       </div>
@@ -247,7 +242,7 @@ export default function Users() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>User</th><th>Email</th><th>ID</th><th>Plan</th><th>Subscription</th><th>Coins</th><th>Joined</th><th>Status</th><th>Actions</th></tr>
+              <tr><th>User</th><th>Email</th><th>ID</th><th>Role</th><th>Subscription</th><th>Coins</th><th>Joined</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {filtered.map(u => (
@@ -260,7 +255,7 @@ export default function Users() {
                   </td>
                   <td style={{ color:'var(--text2)' }}>{u.email}</td>
                   <td><span style={{ fontFamily:'var(--mono)', fontSize:11, color:'var(--text3)' }}>{u.id}</span></td>
-                  <td><span className={`badge ${planBadge[u.plan]}`}>{u.plan}</span></td>
+                  <td><span className={`badge ${roleBadge[u.role]}`}>{u.role}</span></td>
                   <td style={{ fontSize:11, color:'var(--text3)' }}>{u.subExpiry}</td>
                   <td><span className="coin-pill">₵ {u.coins.toLocaleString()}</span></td>
                   <td style={{ color:'var(--text3)', fontSize:12 }}>{u.joined}</td>

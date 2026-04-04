@@ -59,7 +59,7 @@ function RefundModal({ open, onClose }) {
 }
 
 export default function Coins() {
-  const [rules, setRules] = useState({ freeGift:10, paidGift:50, unlockCost:20, referralBonus:100 })
+  const [rules, setRules] = useState({ day1:10, day2:10, day3:20, day4:20, day5:25, day6:30, day7:50, defaultCoinCost:30 })
   const [txns, setTxns] = useState(initTxns)
   const [filter, setFilter] = useState('All')
   const [q, setQ] = useState('')
@@ -86,7 +86,7 @@ export default function Coins() {
           { label:'Total in circulation', value:'8.4M', sub:'across all wallets', color:'var(--amber)' },
           { label:'Purchased today', value:'42,300', sub:'₹12,600 revenue', color:'var(--green)' },
           { label:'Content unlocked', value:'4,210', sub:'episodes today', color:'var(--accent2)' },
-          { label:'Referral coins', value:'14,200', sub:'issued this month', color:'var(--blue)' },
+          { label:'Daily check-ins', value:'2,840', sub:'check-ins today', color:'var(--blue)' },
         ].map(m => (
           <div className="metric-card" key={m.label}>
             <div className="metric-label">{m.label}</div>
@@ -103,10 +103,14 @@ export default function Coins() {
             <div className="card-title" style={{ marginBottom:0 }}>Coin rule configuration</div>
           </div>
           {[
-            { label:'Daily gift — free users',   key:'freeGift',    hint:'Coins per day for free plan' },
-            { label:'Daily gift — paid members', key:'paidGift',    hint:'Coins per day for paid plans' },
-            { label:'Episode unlock cost',        key:'unlockCost',  hint:'Coins required to unlock 1 episode' },
-            { label:'Referral bonus',             key:'referralBonus', hint:'Coins awarded per successful referral' },
+            { label:'Day 1 check-in', key:'day1', hint:'Coins on day 1 of streak' },
+            { label:'Day 2 check-in', key:'day2', hint:'Coins on day 2' },
+            { label:'Day 3 check-in', key:'day3', hint:'Coins on day 3' },
+            { label:'Day 4 check-in', key:'day4', hint:'Coins on day 4' },
+            { label:'Day 5 check-in', key:'day5', hint:'Coins on day 5' },
+            { label:'Day 6 check-in', key:'day6', hint:'Coins on day 6' },
+            { label:'Day 7 check-in (bonus)', key:'day7', hint:'Coins on day 7 (streak reset after)' },
+            { label:'Default episode coin cost', key:'defaultCoinCost', hint:'Default cost to unlock a paid episode' },
           ].map(r => (
             <div key={r.key} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 0', borderBottom:'1px solid var(--border)' }}>
               <div>
@@ -131,7 +135,7 @@ export default function Coins() {
             { label:'Issued (daily gift)', val:'3,82,000', color:'var(--green)' },
             { label:'Purchased',           val:'1,24,500', color:'var(--accent2)' },
             { label:'Spent (unlocks)',     val:'2,10,400', color:'var(--red)' },
-            { label:'Referral issued',     val:'14,200',   color:'var(--blue)' },
+        
             { label:'Balance in wallets',  val:'2,96,100', color:'var(--amber)' },
           ].map(r => (
             <div className="stat-row" key={r.label}>

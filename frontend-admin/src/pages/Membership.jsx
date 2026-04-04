@@ -50,11 +50,9 @@ function PlanModal({ open, onClose, onSave, initial }) {
       </ModalSection>
 
       <ModalSection title="Benefits (coins, content, perks)">
-        <FormGroup label="Bonus coins on subscribe">
-          <input className="input" style={{ width:'100%' }} type="number" placeholder="500" value={form.coins} onChange={e=>upd('coins',+e.target.value)}/>
-        </FormGroup>
+
         {[
-          { key:'earlyAccess', label:'Early episode access', desc:'Access new episodes 24h before free users' },
+          
           { key:'allContent',  label:'All premium content',  desc:'Unlock all paid dramas and episodes' },
         ].map(b => (
           <label key={b.key} style={{ display:'flex', alignItems:'center', gap:12, cursor:'pointer', marginBottom:12 }}>
@@ -161,8 +159,8 @@ export default function Membership() {
                 <div style={{ marginBottom:12 }}>
                   {[
                     p.allContent && '✓ All premium content',
-                    p.earlyAccess && '✓ Early episode access',
-                    `✓ +${p.coins} bonus coins`,
+                    
+                    
                   ].filter(Boolean).map(b => <div key={b} style={{ fontSize:12, color:'var(--text2)', marginBottom:3 }}>{b}</div>)}
                 </div>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>

@@ -16,7 +16,7 @@ const initScheduled = [
 
 const AUDIENCES = ['All users', 'Free users', 'Paid members', 'Weekly plan', 'Monthly plan', 'Annual plan']
 const NOTIF_TYPES = ['New drama release', 'Membership offer', 'Reward coins', 'Reminder', 'Re-engage inactive', 'Custom']
-const CAT_INTERESTS = ['Romance fans', 'Thriller fans', 'Comedy fans', 'Action fans']
+// Removed: CAT_INTERESTS (not in ERD)
 
 export default function Notifications() {
   const [tab, setTab] = useState('compose')
@@ -100,10 +100,9 @@ export default function Notifications() {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">By category interest</label>
-                <select className="select" style={{ width:'100%' }} value={byInterest} onChange={e=>setByInterest(e.target.value)}>
-                  <option value="">None</option>
-                  {CAT_INTERESTS.map(c=><option key={c}>{c}</option>)}
+                <label className="form-label">Notification trigger</label>
+                <select className="select" style={{ width:'100%' }} value={notifType} onChange={e=>setNotifType(e.target.value)}>
+                  {NOTIF_TYPES.map(t=><option key={t}>{t}</option>)}
                 </select>
               </div>
             </div>

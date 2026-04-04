@@ -4,102 +4,79 @@ import Modal, { FormGroup, ModalSection } from '../components/ui/Modal.jsx'
 import { Toggle, ConfirmDialog } from '../components/ui/Controls.jsx'
 
 const initBanners = [
-  { id:1, name:'Homepage Hero', image:null, link:'Secret Marriage', destination:'drama', position:'home-top', trigger:'always', targetPlan:'All', schedule:'Always on', status:'Live', type:'banner', impressions:48200, clicks:3840 },
-  { id:2, name:'Membership Offer Popup', image:null, link:'20% off promo', destination:'membership', position:'popup', trigger:'on-open', targetPlan:'Free', schedule:'Apr 10 – Apr 20', status:'Scheduled', type:'popup', impressions:0, clicks:0 },
-  { id:3, name:'New Release Banner', image:null, link:"CEO's Revenge", destination:'drama', position:'home-mid', trigger:'on-scroll', targetPlan:'All', schedule:'Not set', status:'Draft', type:'banner', impressions:0, clicks:0 },
-  { id:4, name:'Weekend Offer', image:null, link:'Annual Plan discount', destination:'membership', position:'popup', trigger:'timer', targetPlan:'Paid', schedule:'Apr 5 – Apr 7', status:'Live', type:'popup', impressions:24100, clicks:1820 },
+  { id:1, title:'New Drama Launch', image_url:null, show_id:'D001', show_name:'Secret Marriage', link_type:'show', display_order:1, is_active:true, starts_at:'2025-04-01', ends_at:'2025-04-30' },
+  { id:2, title:'Membership 50% Off', image_url:null, show_id:null, show_name:null, link_type:'external', display_order:2, is_active:true, starts_at:'2025-04-10', ends_at:'2025-04-20' },
+  { id:3, title:'CEO Revenge Season 2', image_url:null, show_id:'D002', show_name:"CEO's Revenge", link_type:'show', display_order:3, is_active:false, starts_at:null, ends_at:null },
 ]
 
-const POSITIONS = ['home-top', 'home-mid', 'home-bottom', 'detail-page', 'popup']
-
-
+const SHOWS_LIST = [
+  { id:'D001', title:'Secret Marriage' },
+  { id:'D002', title:"CEO's Revenge" },
+  { id:'D003', title:'Lost in Seoul' },
+  { id:'D004', title:'Campus Crush' },
+]
 
 function BannerModal({ open, onClose, onSave, initial }) {
   const isEdit = !!initial?.id
-  const [form, setForm] = useState(initial || { name:'', link:'', destination:'drama', position:'home-top', trigger:'always', targetPlan:'All', schedule:'', type:'banner', status:'Draft' })
+  const [form, setForm] = useState(initial || { title:'', show_id:null, link_type:'show', display_order:1, is_active:true, starts_at:'', ends_at:'' })
   const upd = (k,v) => setForm(p=>({...p,[k]:v}))
   if(!open) return null
   return (
-    <Modal open={open} onClose={onClose} title={isEdit?`Edit — ${initial.name}`:'Add Banner / Popup'} width={560}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => { onSave({...form,id:initial?.id||Date.now(),impressions:initial?.impressions||0,clicks:initial?.clicks||0}); onClose() }}>{isEdit?'Save Changes':'Create'}</button></>}
+    <Modal open={open} onClose={onClose} title={isEdit?`Edit — ${initial.title}`:'Add Banner'} width={520}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => { onSave({...form,id:initial?.id||Date.now(), show_name: SHOWS_LIST.find(s=>s.id===form.show_id)?.title||null }); onClose() }}>{isEdit?'Save Changes':'Create'}</button></>}
     >
-      <ModalSection title="Basic details">
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-          <FormGroup label="Banner name *"><input className="input" style={{ width:'100%' }} placeholder="e.g. Homepage Hero" value={form.name} onChange={e=>upd('name',e.target.value)}/></FormGroup>
-          <FormGroup label="Type">
-            <select className="select" style={{ width:'100%' }} value={form.type} onChange={e=>upd('type',e.target.value)}><option value="banner">Banner</option><option value="popup">Popup</option></select>
-          </FormGroup>
-        </div>
-        <FormGroup label="Banner image / creative">
+      <ModalSection title="Banner details">
+        <FormGroup label="Title *">
+          <input className="input" style={{ width:'100%' }} placeholder="e.g. New Drama Launch" value={form.title} onChange={e=>upd('title',e.target.value)}/>
+        </FormGroup>
+        <FormGroup label="Banner image">
           <div style={{ border:'2px dashed var(--border2)', borderRadius:'var(--radius)', padding:16, textAlign:'center', background:'var(--bg3)', cursor:'pointer', position:'relative' }}>
             <input type="file" accept="image/*" style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer' }}/>
             <div style={{ fontSize:20, marginBottom:6 }}>🖼</div>
             <div style={{ fontSize:12, color:'var(--text2)' }}>Upload image</div>
-            <div style={{ fontSize:11, color:'var(--text3)' }}>PNG, JPG · 1280×400 px for banners · 600×800 px for popups</div>
+            <div style={{ fontSize:11, color:'var(--text3)' }}>PNG, JPG · 1280×400 px recommended</div>
           </div>
         </FormGroup>
       </ModalSection>
 
-      <ModalSection title="Link & target">
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-          <FormGroup label="Destination type">
-            <select className="select" style={{ width:'100%' }} value={form.destination} onChange={e=>upd('destination',e.target.value)}>
-              <option value="drama">Drama / Episode</option><option value="membership">Membership plan</option><option value="url">External URL</option>
+      <ModalSection title="Link configuration">
+        <FormGroup label="Link type">
+          <div style={{ display:'flex', gap:8 }}>
+            <button className={`chip${form.link_type==='show'?' chip-active':''}`} onClick={() => upd('link_type','show')}>Show / Drama</button>
+            <button className={`chip${form.link_type==='external'?' chip-active':''}`} onClick={() => upd('link_type','external')}>External URL</button>
+          </div>
+        </FormGroup>
+        {form.link_type === 'show' ? (
+          <FormGroup label="Linked show">
+            <select className="select" style={{ width:'100%' }} value={form.show_id||''} onChange={e=>upd('show_id',e.target.value||null)}>
+              <option value="">Select a show…</option>
+              {SHOWS_LIST.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}
             </select>
           </FormGroup>
-          <FormGroup label="Link to">
-            <input className="input" placeholder="Search drama or enter URL…" value={form.link} onChange={e=>upd('link',e.target.value)}/>
+        ) : (
+          <FormGroup label="External URL">
+            <input className="input" style={{ width:'100%' }} placeholder="https://..." value={form.external_url||''} onChange={e=>upd('external_url',e.target.value)}/>
           </FormGroup>
-        </div>
+        )}
       </ModalSection>
 
       <ModalSection title="Display settings">
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-          <FormGroup label="Position">
-            <select className="select" style={{ width:'100%' }} value={form.position} onChange={e=>upd('position',e.target.value)}>
-              {POSITIONS.map(p=><option key={p}>{p}</option>)}
-            </select>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+          <FormGroup label="Display order">
+            <input className="input" type="number" min={1} value={form.display_order} onChange={e=>upd('display_order',+e.target.value)}/>
           </FormGroup>
-          <FormGroup label="Popup trigger">
-            <select className="select" style={{ width:'100%' }} value={form.trigger} onChange={e=>upd('trigger',e.target.value)}>
-              {TRIGGERS.map(t=><option key={t}>{t}</option>)}
-            </select>
+          <FormGroup label="Start date">
+            <input className="input" type="date" value={form.starts_at||''} onChange={e=>upd('starts_at',e.target.value)}/>
           </FormGroup>
-          <FormGroup label="Target audience">
-            <select className="select" style={{ width:'100%' }} value={form.targetPlan} onChange={e=>upd('targetPlan',e.target.value)}>
-              {TARGET_PLANS.map(t=><option key={t}>{t}</option>)}
-            </select>
+          <FormGroup label="End date">
+            <input className="input" type="date" value={form.ends_at||''} onChange={e=>upd('ends_at',e.target.value)}/>
           </FormGroup>
-          <FormGroup label="Schedule range">
-            <input className="input" placeholder="e.g. Apr 10 – Apr 20" value={form.schedule} onChange={e=>upd('schedule',e.target.value)}/>
-          </FormGroup>
-          <FormGroup label="Start date"><input className="input" type="date"/></FormGroup>
-          <FormGroup label="End date"><input className="input" type="date"/></FormGroup>
         </div>
+        <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer', marginTop:12 }}>
+          <Toggle on={form.is_active} onChange={v=>upd('is_active',v)}/>
+          <span style={{ fontSize:13 }}>Active (visible on the app)</span>
+        </label>
       </ModalSection>
-    </Modal>
-  )
-}
-
-function PreviewModal({ open, onClose, banner }) {
-  if (!banner || !open) return null
-  return (
-    <Modal open={open} onClose={onClose} title={`Preview — ${banner.name}`} width={500}>
-      <div style={{ background:'var(--bg3)', borderRadius:10, overflow:'hidden', marginBottom:16 }}>
-        <div style={{ height: banner.type==='popup'?220:110, background:'linear-gradient(135deg, var(--accent-bg), var(--bg4))', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:8 }}>
-          <div style={{ fontSize:16, fontWeight:600, color:'var(--text)' }}>{banner.name}</div>
-          <div style={{ fontSize:12, color:'var(--text3)' }}>→ {banner.link}</div>
-          {banner.type==='popup' && <div style={{ padding:'6px 16px', background:'var(--accent)', borderRadius:20, fontSize:12, color:'#fff', marginTop:8 }}>Get Offer</div>}
-        </div>
-      </div>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
-        {[{l:'Position',v:banner.position},{l:'Trigger',v:banner.trigger},{l:'Audience',v:banner.targetPlan}].map(r => (
-          <div key={r.l} style={{ background:'var(--bg3)', padding:10, borderRadius:8, textAlign:'center' }}>
-            <div style={{ fontSize:10, color:'var(--text3)', marginBottom:3 }}>{r.l}</div>
-            <div style={{ fontSize:12, fontWeight:500 }}>{r.v}</div>
-          </div>
-        ))}
-      </div>
     </Modal>
   )
 }
@@ -112,88 +89,57 @@ export default function Banners() {
 
   const saveBanner = data => setBanners(p => p.find(b=>b.id===data.id)?p.map(b=>b.id===data.id?data:b):[...p,data])
   const deleteBanner = id => { setBanners(p=>p.filter(b=>b.id!==id)); setConfirm(null) }
-  const toggleStatus = id => setBanners(p => p.map(b => b.id===id ? {...b, status:b.status==='Live'?'Draft':'Live'} : b))
+  const toggleActive = id => setBanners(p => p.map(b => b.id===id ? {...b, is_active:!b.is_active} : b))
   const open = (m, b=null) => { setModal(m); setSelected(b) }
-
-  const liveBanners = banners.filter(b=>b.status==='Live')
-  const totalImpressions = banners.reduce((a,b)=>a+b.impressions,0)
-  const totalClicks = banners.reduce((a,b)=>a+b.clicks,0)
 
   return (
     <div className="page-enter">
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
         <div>
-          <div style={{ fontWeight:600 }}>Banners &amp; promotional popups</div>
-          <div style={{ fontSize:12, color:'var(--text3)' }}>{banners.length} total · {liveBanners.length} live</div>
+          <div style={{ fontWeight:600 }}>Homepage banners</div>
+          <div style={{ fontSize:12, color:'var(--text3)' }}>{banners.length} total · {banners.filter(b=>b.is_active).length} active</div>
         </div>
         <button className="btn btn-primary" onClick={() => open('add')}><Plus size={14}/> Add banner</button>
       </div>
 
-      {/* Stats */}
-      <div className="metrics-grid" style={{ gridTemplateColumns:'repeat(4,1fr)', marginBottom:16 }}>
-        {[
-          { label:'Total Banners', value:banners.length, sub:`${liveBanners.length} currently live` },
-          { label:'Total Impressions', value:totalImpressions.toLocaleString(), sub:'all-time views' },
-          { label:'Total Clicks', value:totalClicks.toLocaleString(), sub:'all-time clicks' },
-          { label:'Avg CTR', value:totalImpressions?`${((totalClicks/totalImpressions)*100).toFixed(1)}%`:'—', sub:'click-through rate' },
-        ].map(m => (
-          <div className="metric-card" key={m.label}>
-            <div className="metric-label">{m.label}</div>
-            <div className="metric-value" style={{ fontSize:20 }}>{m.value}</div>
-            <div className="metric-sub">{m.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Banner cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:14, marginBottom:20 }}>
-        {banners.map(b => (
-          <div className="card" key={b.id}>
-            {/* Preview area */}
-            <div style={{
-              height:80, borderRadius:8, marginBottom:12,
-              background:'linear-gradient(135deg, var(--accent-bg), var(--bg4))',
-              display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:4,
-              border:'1px solid var(--border)', position:'relative', overflow:'hidden',
-            }}>
-              <div style={{ fontSize:13, fontWeight:500, color:'var(--text)' }}>{b.name}</div>
-              <div style={{ fontSize:11, color:'var(--text3)' }}>{b.position} · {b.trigger}</div>
-              <span className={`badge ${b.status==='Live'?'badge-green':b.status==='Scheduled'?'badge-amber':'badge-blue'}`} style={{ position:'absolute', top:8, right:8 }}>{b.status}</span>
-            </div>
-
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
-              <div style={{ fontSize:12, color:'var(--text2)' }}>→ {b.link}</div>
-              <span className="badge badge-blue" style={{ fontSize:10 }}>{b.type}</span>
-            </div>
-            <div style={{ fontSize:11, color:'var(--text3)', marginBottom:10 }}>📅 {b.schedule} · 👥 {b.targetPlan}</div>
-
-            {b.impressions > 0 && (
-              <div style={{ display:'flex', gap:12, fontSize:11, color:'var(--text3)', marginBottom:12 }}>
-                <span>👁 {b.impressions.toLocaleString()} impressions</span>
-                <span>🖱 {b.clicks.toLocaleString()} clicks</span>
-                <span>📊 CTR {((b.clicks/b.impressions)*100).toFixed(1)}%</span>
-              </div>
-            )}
-
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <div style={{ display:'flex', gap:6 }}>
-                <button className="btn btn-ghost btn-sm" onClick={() => open('edit', b)}><Edit2 size={11}/> Edit</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => open('preview', b)}><Eye size={11}/> Preview</button>
-              </div>
-              <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-                <button className={`btn btn-sm ${b.status==='Live'?'btn-danger':'btn-primary'}`} onClick={() => toggleStatus(b.id)} style={{ fontSize:10 }}>
-                  {b.status==='Live'?'Disable':'Enable'}
-                </button>
-                <button className="btn btn-danger btn-sm" onClick={() => setConfirm({id:b.id,name:b.name})}><Trash2 size={11}/></button>
-              </div>
-            </div>
-          </div>
-        ))}
+      <div className="card" style={{ padding:0 }}>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Order</th><th>Title</th><th>Link type</th><th>Linked to</th><th>Schedule</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              {[...banners].sort((a,b)=>a.display_order-b.display_order).map(b => (
+                <tr key={b.id}>
+                  <td style={{ fontFamily:'var(--mono)', fontSize:12, color:'var(--text3)' }}>{b.display_order}</td>
+                  <td style={{ fontWeight:500 }}>{b.title}</td>
+                  <td><span className={`badge ${b.link_type==='show'?'badge-blue':'badge-amber'}`}>{b.link_type}</span></td>
+                  <td style={{ color:'var(--text2)', fontSize:12 }}>{b.show_name || '—'}</td>
+                  <td style={{ fontSize:11, color:'var(--text3)' }}>
+                    {b.starts_at && b.ends_at ? `${b.starts_at} → ${b.ends_at}` : 'Always'}
+                  </td>
+                  <td>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <span className={`badge ${b.is_active?'badge-green':'badge-amber'}`}>{b.is_active?'Active':'Inactive'}</span>
+                      <Toggle on={b.is_active} onChange={() => toggleActive(b.id)}/>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display:'flex', gap:5 }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => open('edit', b)}><Edit2 size={11}/> Edit</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => setConfirm({id:b.id,name:b.title})}><Trash2 size={11}/></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {banners.length===0 && <tr><td colSpan={7} style={{ textAlign:'center', color:'var(--text3)', padding:'40px 0' }}>No banners yet</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <BannerModal open={modal==='add'} onClose={() => setModal(null)} onSave={saveBanner} initial={null}/>
       <BannerModal open={modal==='edit'} onClose={() => setModal(null)} onSave={saveBanner} initial={selected}/>
-      <PreviewModal open={modal==='preview'} onClose={() => setModal(null)} banner={selected}/>
       <ConfirmDialog open={!!confirm} danger title="Delete Banner"
         message={`Remove "${confirm?.name}" permanently?`}
         onConfirm={() => deleteBanner(confirm.id)} onCancel={() => setConfirm(null)}
