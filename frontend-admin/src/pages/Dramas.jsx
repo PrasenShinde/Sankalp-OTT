@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react'
-import { Search, Plus, Edit2, Trash2, BarChart2, ChevronUp, ChevronDown, Lock, Unlock, Star, Video, X, CheckCircle2 } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Search, Plus, Edit2, Trash2, BarChart2, ChevronUp, ChevronDown, Lock, Unlock, Star, Video, X, CheckCircle2, Loader } from 'lucide-react'
 import Modal, { ModalSection, FormGroup } from '../components/ui/Modal.jsx'
 import { Toggle, StepBar, FileDropzone, ConfirmDialog } from '../components/ui/Controls.jsx'
+import { useDramas } from '../services/useDramas.js'
 
 function VideoDropzone({ file, onFileChange, uploadProgress }) {
   const inputRef = useRef()
@@ -68,45 +69,6 @@ function VideoDropzone({ file, onFileChange, uploadProgress }) {
 const ALL_TAGS = ['Romance', 'CEO', 'Revenge', 'Comedy', 'School', 'Thriller', 'Trending', 'Action', 'Fantasy', 'Slice of Life', 'Strong Heroine', 'Werewolf', 'Hidden Identity', 'Billionaire', 'Family Bonds', 'Forced Love']
 const ALL_CATEGORIES = ['Popular', 'New', 'Rankings', 'Anime', 'VIP']
 
-const initDramas = [
-  {
-    id: 'D001', title: 'Secret Marriage', synopsis: 'A CEO marries in secret to fulfill a contract, but love blooms unexpectedly.',
-    category: 'Popular', status: 'Published', tags: ['Romance','CEO','Trending'],
-    views: '2.1M', watchTime: '8.4M min', unlocks: 12400, reminders: true,
-    rating_avg: 4.5, rating_count: 8200, is_featured_for_you: true,
-    episodes: [
-      { id:'E001', title:'The Proposal',       ep:1, duration:'12:30', is_free:true,  coin_cost:0,  status:'ready', views:210000 },
-      { id:'E002', title:'Unexpected Meeting', ep:2, duration:'11:10', is_free:false, coin_cost:30, status:'ready', views:185000 },
-      { id:'E003', title:'Secrets Unfold',     ep:3, duration:'13:45', is_free:false, coin_cost:30, status:'ready', views:162000 },
-      { id:'E004', title:'Breaking Point',     ep:4, duration:'10:00', is_free:false, coin_cost:30, status:'ready', views:148000 },
-    ],
-  },
-  {
-    id: 'D002', title: "CEO's Revenge", synopsis: 'A vengeful CEO meets his match in a fearless junior employee.',
-    category: 'Popular', status: 'Published', tags: ['Revenge','CEO','Billionaire'],
-    views: '1.7M', watchTime: '6.2M min', unlocks: 9800, reminders: true,
-    rating_avg: 4.2, rating_count: 5400, is_featured_for_you: false,
-    episodes: [
-      { id:'E005', title:'First Day', ep:1, duration:'14:00', is_free:true,  coin_cost:0,  status:'ready', views:170000 },
-      { id:'E006', title:'The Plan',  ep:2, duration:'11:45', is_free:false, coin_cost:30, status:'ready', views:142000 },
-    ],
-  },
-  {
-    id: 'D003', title: 'Lost in Seoul', synopsis: 'Two strangers lost in Seoul discover love over seven days.',
-    category: 'New', status: 'Published', tags: ['Romance'],
-    views: '1.4M', watchTime: '4.8M min', unlocks: 7200, reminders: false,
-    rating_avg: 4.7, rating_count: 3100, is_featured_for_you: true,
-    episodes: [{ id:'E007', title:'Day One', ep:1, duration:'15:30', is_free:true, coin_cost:0, status:'ready', views:140000 }],
-  },
-  {
-    id: 'D004', title: 'Campus Crush', synopsis: "College rivals who can't stand each other are forced to room together.",
-    category: 'New', status: 'Draft', tags: ['Comedy','School'],
-    views: '640K', watchTime: '1.9M min', unlocks: 0, reminders: false,
-    rating_avg: 0, rating_count: 0, is_featured_for_you: false,
-    episodes: [{ id:'E008', title:'Orientation Day', ep:1, duration:'10:00', is_free:true, coin_cost:0, status:'ready', views:64000 }],
-  },
-]
-
 const tagColor = { Romance:'badge-pink', Trending:'badge-amber', CEO:'badge-blue', Revenge:'badge-red', Comedy:'badge-green', School:'badge-blue', Thriller:'badge-red', Action:'badge-amber', Billionaire:'badge-purple', 'Strong Heroine':'badge-pink', 'Hidden Identity':'badge-blue', Fantasy:'badge-purple' }
 const emptyDrama = { title:'', synopsis:'', category:'Popular', status:'Draft', tags:[], episodes:[], reminders:false, is_featured_for_you:false }
 const emptyEp = { title:'', duration:'', is_free:true, coin_cost:0, videoFile:null, uploadProgress:0 }
@@ -118,6 +80,28 @@ function DramaModal({ open, onClose, onSave, initial, initialStep = 0, autoAddEp
   const [episodes, setEpisodes] = useState(() => initial?.episodes || [])
   const [newEp, setNewEp] = useState(emptyEp)
   const [addingEp, setAddingEp] = useState(autoAddEp)
+  const [saving, setSaving] = useState(false)
+  const intervalsRef = useRef([])
+
+  // Reset form when modal opens with new data
+  useEffect(() => {
+    if (open) {
+      setForm(initial || emptyDrama)
+      setEpisodes(initial?.episodes || [])
+      setStep(initialStep)
+      setAddingEp(autoAddEp)
+      setNewEp(emptyEp)
+      setSaving(false)
+    }
+  }, [open, initial, initialStep, autoAddEp])
+
+  // Cleanup intervals when modal closes
+  useEffect(() => {
+    return () => {
+      intervalsRef.current.forEach(interval => clearInterval(interval))
+      intervalsRef.current = []
+    }
+  }, [])
 
   const upd = (k, v) => setForm(p => ({ ...p, [k]: v }))
   const toggleTag = t => upd('tags', form.tags.includes(t) ? form.tags.filter(x => x !== t) : [...form.tags, t])
@@ -132,9 +116,14 @@ function DramaModal({ open, onClose, onSave, initial, initialStep = 0, autoAddEp
       let pct = 0
       const iv = setInterval(() => {
         pct += Math.floor(Math.random() * 18) + 8
-        if (pct >= 100) { pct = 100; clearInterval(iv) }
+        if (pct >= 100) { 
+          pct = 100
+          clearInterval(iv)
+          intervalsRef.current = intervalsRef.current.filter(i => i !== iv)
+        }
         setEpisodes(prev => prev.map(e => e.id === ep.id ? { ...e, uploadProgress: pct, status: pct < 100 ? 'uploading' : 'processing' } : e))
       }, 300)
+      intervalsRef.current.push(iv)
     } else {
       setEpisodes(p => [...p, ep])
     }
@@ -149,10 +138,17 @@ function DramaModal({ open, onClose, onSave, initial, initialStep = 0, autoAddEp
     setEpisodes(arr.map((e,i) => ({ ...e, ep: i+1 })))
   }
 
-  const handleSave = () => {
-    onSave({ ...form, episodes, id: initial?.id || `D${Date.now()}`, rating_avg: initial?.rating_avg||0, rating_count: initial?.rating_count||0 })
-    onClose()
-    setStep(initialStep)
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await onSave({ ...form, episodes, id: initial?.id || `D${Date.now()}`, rating_avg: initial?.rating_avg||0, rating_count: initial?.rating_count||0 })
+      onClose()
+      setStep(initialStep)
+    } catch (err) {
+      const errData = err?.response?.data
+      const msg = errData?.details ? errData.details.map(d => `${d.field}: ${d.message}`).join('\n') : errData?.error || err?.message || 'Save failed'
+      alert(msg)
+    } finally { setSaving(false) }
   }
 
   const STEPS = ['Basic Info', 'Tags', 'Episodes', 'Review']
@@ -170,8 +166,12 @@ function DramaModal({ open, onClose, onSave, initial, initialStep = 0, autoAddEp
             </button>
           )}
           {step < 3
-            ? <button className="btn btn-primary" onClick={() => setStep(s => s+1)}>Next →</button>
-            : <button className="btn btn-primary" onClick={handleSave}>{isEdit ? 'Save Changes' : 'Create Drama'}</button>
+            ? <button className="btn btn-primary" onClick={() => {
+                if (step === 0 && !form.title.trim()) { alert('Title is required'); return }
+                if (step === 0 && !form.category) { alert('Category is required'); return }
+                setStep(s => s+1)
+              }}>Next →</button>
+            : <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Drama'}</button>
           }
         </>
       }
@@ -195,11 +195,25 @@ function DramaModal({ open, onClose, onSave, initial, initialStep = 0, autoAddEp
           </ModalSection>
           <ModalSection title="Media uploads">
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-              <FormGroup label="Thumbnail">
-                <FileDropzone label="Upload thumbnail" accept="image/*" hint="400×600 px recommended" onChange={() => {}} />
+              <FormGroup label="Thumbnail *">
+                <FileDropzone label="Upload thumbnail" accept="image/jpeg,image/png" hint="JPG/PNG · 400×600 px recommended"
+                  preview={form.thumbnailPreview || null}
+                  onChange={(f) => {
+                    if (f && (f.type === 'image/jpeg' || f.type === 'image/png')) {
+                      upd('thumbnailFile', f)
+                      upd('thumbnailPreview', URL.createObjectURL(f))
+                    } else if (f) { alert('Only JPG/PNG images allowed') }
+                  }} />
               </FormGroup>
               <FormGroup label="Banner image">
-                <FileDropzone label="Upload banner" accept="image/*" hint="1280×720 px recommended" onChange={() => {}} />
+                <FileDropzone label="Upload banner" accept="image/jpeg,image/png" hint="JPG/PNG · 1280×720 px recommended"
+                  preview={form.bannerPreview || null}
+                  onChange={(f) => {
+                    if (f && (f.type === 'image/jpeg' || f.type === 'image/png')) {
+                      upd('bannerFile', f)
+                      upd('bannerPreview', URL.createObjectURL(f))
+                    } else if (f) { alert('Only JPG/PNG images allowed') }
+                  }} />
               </FormGroup>
             </div>
           </ModalSection>
@@ -295,8 +309,9 @@ function DramaModal({ open, onClose, onSave, initial, initialStep = 0, autoAddEp
                 <FormGroup label="Title *">
                   <input className="input" placeholder="Episode title" value={newEp.title} onChange={e => setNewEp(p=>({...p,title:e.target.value}))}/>
                 </FormGroup>
-                <FormGroup label="Duration (mm:ss)">
-                  <input className="input" placeholder="12:30" value={newEp.duration} onChange={e => setNewEp(p=>({...p,duration:e.target.value}))}/>
+                <FormGroup label={newEp.videoFile && newEp.duration ? "Duration (auto-detected)" : "Duration (mm:ss)"}>
+                  <input className="input" placeholder="12:30" value={newEp.duration} onChange={e => setNewEp(p=>({...p,duration:e.target.value}))}
+                    style={newEp.videoFile && newEp.duration ? { borderColor: 'var(--green)', color: 'var(--green)' } : {}} />
                 </FormGroup>
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
@@ -316,14 +331,35 @@ function DramaModal({ open, onClose, onSave, initial, initialStep = 0, autoAddEp
                 <VideoDropzone
                   file={newEp.videoFile}
                   uploadProgress={newEp.uploadProgress}
-                  onFileChange={f => setNewEp(p => ({ ...p, videoFile: f, uploadProgress: 0 }))}
+                  onFileChange={f => {
+                    setNewEp(p => ({ ...p, videoFile: f, uploadProgress: 0 }))
+                    // Auto-detect video duration
+                    if (f) {
+                      const video = document.createElement('video')
+                      video.preload = 'metadata'
+                      video.onloadedmetadata = () => {
+                        const totalSec = Math.round(video.duration)
+                        const mins = Math.floor(totalSec / 60)
+                        const secs = totalSec % 60
+                        const formatted = `${mins}:${String(secs).padStart(2, '0')}`
+                        setNewEp(p => ({ ...p, duration: formatted }))
+                        URL.revokeObjectURL(video.src)
+                      }
+                      video.src = URL.createObjectURL(f)
+                    }
+                  }}
                 />
               </FormGroup>
               <div style={{ display:'flex', gap:8, marginTop:12 }}>
                 <button className="btn btn-primary" onClick={addEpisode} disabled={!newEp.title.trim()}>
                   <Plus size={13}/> Add Episode
                 </button>
-                <button className="btn btn-ghost" onClick={() => { setAddingEp(false); setNewEp(emptyEp) }}>Cancel</button>
+                <button className="btn btn-ghost" onClick={() => { 
+                  intervalsRef.current.forEach(i => clearInterval(i))
+                  intervalsRef.current = []
+                  setAddingEp(false)
+                  setNewEp(emptyEp) 
+                }}>Cancel</button>
               </div>
             </div>
           ) : (
@@ -345,6 +381,22 @@ function DramaModal({ open, onClose, onSave, initial, initialStep = 0, autoAddEp
               {form.is_featured_for_you && <span className="badge badge-pink">★ For You</span>}
               {form.reminders && <span className="badge badge-blue">🔔 Reminders</span>}
             </div>
+            {(form.thumbnailPreview || form.bannerPreview) && (
+              <div style={{ display:'flex', gap:10, marginTop:12 }}>
+                {form.thumbnailPreview && (
+                  <div>
+                    <div style={{ fontSize:10, color:'var(--text3)', marginBottom:4 }}>THUMBNAIL</div>
+                    <img src={form.thumbnailPreview} alt="thumb" style={{ height:80, borderRadius:6, border:'1px solid var(--border)' }}/>
+                  </div>
+                )}
+                {form.bannerPreview && (
+                  <div>
+                    <div style={{ fontSize:10, color:'var(--text3)', marginBottom:4 }}>BANNER</div>
+                    <img src={form.bannerPreview} alt="banner" style={{ height:80, borderRadius:6, border:'1px solid var(--border)' }}/>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             <div style={{ background:'var(--bg3)', padding:12, borderRadius:8 }}>
@@ -409,7 +461,8 @@ function StatsModal({ open, onClose, drama }) {
 }
 
 export default function Dramas() {
-  const [dramas, setDramas] = useState(initDramas)
+  const { dramas, categories, loading, createDrama, updateDrama, deleteDrama: apiDeleteDrama, togglePublish: apiTogglePublish, reload } = useDramas()
+  const ALL_CATEGORIES = categories.map(c => c.name)
   const [q, setQ] = useState('')
   const [catF, setCatF] = useState('All')
   const [statusF, setStatusF] = useState('All')
@@ -417,17 +470,43 @@ export default function Dramas() {
   const [selected, setSelected] = useState(null)
 
   const filtered = dramas.filter(d => {
-    const m = d.title.toLowerCase().includes(q.toLowerCase()) || d.tags.some(t => t.toLowerCase().includes(q.toLowerCase()))
+    const m = d.title.toLowerCase().includes(q.toLowerCase()) || (d.tags||[]).some(t => t.toLowerCase().includes(q.toLowerCase()))
     const c = catF==='All' || d.category===catF
     const s = statusF==='All' || d.status===statusF
     return m && c && s
   })
 
-  const saveDrama = data => setDramas(p => data.id && p.find(d => d.id===data.id) ? p.map(d => d.id===data.id ? data : d) : [...p, data])
-  const deleteDrama = id => { setDramas(p => p.filter(d => d.id!==id)); setModal(null) }
-  const togglePublish = id => setDramas(p => p.map(d => d.id===id ? {...d, status: d.status==='Published'?'Draft':'Published'} : d))
+  const saveDrama = async (data) => {
+    try {
+      if (data.id && dramas.find(d => d.id === data.id)) {
+        await updateDrama(data.id, data)
+      } else {
+        await createDrama(data)
+      }
+    } catch (err) {
+      const errData = err.response?.data
+      const msg = errData?.details ? errData.details.map(d => `${d.field}: ${d.message}`).join('\n') : errData?.error || err.message || 'Failed to save drama'
+      alert(msg)
+    }
+  }
+  const handleDelete = async (id) => {
+    try { await apiDeleteDrama(id) } catch { alert('Failed to delete') }
+    setModal(null)
+  }
+  const togglePublish = async (id) => {
+    try { await apiTogglePublish(id) } catch { alert('Failed to toggle') }
+  }
 
   const open = (m, d=null) => { setModal(m); setSelected(d) }
+
+  if (loading) {
+    return (
+      <div className="page-enter" style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'50vh' }}>
+        <Loader size={24} className="spin" style={{ color:'var(--accent2)' }}/>
+        <span style={{ marginLeft:10, color:'var(--text3)' }}>Loading dramas...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="page-enter">
@@ -529,11 +608,21 @@ export default function Dramas() {
 
       <DramaModal open={modal==='add'} onClose={() => setModal(null)} onSave={saveDrama} initial={null}/>
       <DramaModal open={modal==='edit'} onClose={() => setModal(null)} onSave={saveDrama} initial={selected}/>
-      <DramaModal open={modal==='add-ep'} onClose={() => setModal(null)} onSave={saveDrama} initial={selected} initialStep={2} autoAddEp={true}/>
+      <DramaModal open={modal==='add-ep'} onClose={() => setModal(null)} onSave={async (data) => {
+        try {
+          await updateDrama(selected.id, data)
+          alert('Episode(s) added successfully!')
+          await reload()
+        } catch (err) {
+          const errData = err.response?.data
+          const msg = errData?.details ? errData.details.map(d => `${d.field}: ${d.message}`).join('\n') : errData?.error || err.message
+          alert('Failed: ' + msg)
+        }
+      }} initial={selected} initialStep={2} autoAddEp={true}/>
       <StatsModal open={modal==='stats'} onClose={() => setModal(null)} drama={selected}/>
       <ConfirmDialog open={modal==='delete'} title="Delete Drama" danger
         message={`Permanently delete "${selected?.title}"? This will remove all episodes. This cannot be undone.`}
-        onConfirm={() => deleteDrama(selected?.id)} onCancel={() => setModal(null)}
+        onConfirm={() => handleDelete(selected?.id)} onCancel={() => setModal(null)}
       />
     </div>
   )

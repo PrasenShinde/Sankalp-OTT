@@ -2,18 +2,18 @@
   "name": "ott-backend",
   "version": "1.0.0",
   "description": "OTT Platform Backend - Express.js + Prisma",
-  "main": "src/server.js",
+  "main": "server.js",
   "type": "commonjs",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "worker": "node src/workers/transcode.worker.js",
-    "start": "node src/server.js",
+    "dev": "node --watch server.js",
+    "worker": "node workers/transcode.worker.js",
+    "start": "node server.js",
     "db:migrate": "npx prisma migrate dev",
     "db:deploy": "npx prisma migrate deploy",
     "db:studio": "npx prisma studio",
     "db:generate": "npx prisma generate",
-    "db:seed": "node src/prisma/seed.js",
-    "minio:setup": "node src/config/minio-setup.js"
+    "db:seed": "node prisma/seed.js",
+    "minio:setup": "node config/minio-setup.js"
   },
   "dependencies": {
     "express": "^4.21.0",
@@ -38,8 +38,9 @@
     "supertest": "^7.0.0"
   },
   "prisma": {
-  "schema": "src/prisma/schema.prisma"
+  "schema": "prisma/schema.prisma"
 }
+
 
 }
 

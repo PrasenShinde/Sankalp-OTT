@@ -1,48 +1,42 @@
-import { useState } from 'react'
-import { Plus, Trash2, Edit2, ChevronUp, ChevronDown } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Trash2, Edit2, ChevronUp, ChevronDown, Loader } from 'lucide-react'
 import Modal, { FormGroup, ModalSection } from '../components/ui/Modal.jsx'
 import { Toggle, ConfirmDialog } from '../components/ui/Controls.jsx'
-
-const initCategories = [
-  { id:1, name:'Popular',    displayOrder:1, dramas:42, active:true },
-  { id:2, name:'New',        displayOrder:2, dramas:18, active:true },
-  { id:3, name:'Rankings',   displayOrder:3, dramas:95, active:true },
-  { id:4, name:'Anime',      displayOrder:4, dramas:31, active:true },
-  { id:5, name:'VIP',        displayOrder:5, dramas:20, active:true },
-]
-
-const initTags = [
-  { id:1, name:'Romance',         count:88, trending:true },
-  { id:2, name:'CEO',             count:72, trending:true },
-  { id:3, name:'Revenge',         count:60, trending:false },
-  { id:4, name:'Comedy',          count:50, trending:false },
-  { id:5, name:'School',          count:44, trending:false },
-  { id:6, name:'Thriller',        count:36, trending:true },
-  { id:7, name:'Strong Heroine',  count:34, trending:false },
-  { id:8, name:'Werewolf',        count:28, trending:false },
-  { id:9, name:'Hidden Identity', count:22, trending:false },
-  { id:10, name:'Billionaire',    count:18, trending:true },
-  { id:11, name:'Action',         count:14, trending:false },
-  { id:12, name:'Fantasy',        count:10, trending:false },
-  { id:13, name:'Family Bonds',   count:8,  trending:false },
-  { id:14, name:'Forced Love',    count:6,  trending:false },
-]
+import { categoriesApi, tagsApi } from '../services/api.js'
 
 function CategoryModal({ open, onClose, onSave, initial }) {
   const isEdit = !!initial?.id
-  const [form, setForm] = useState(initial || { name:'', displayOrder:'' })
+  const [form, setForm] = useState(initial || { name:'', display_order:0 })
+  const [saving, setSaving] = useState(false)
   const upd = (k,v) => setForm(p=>({...p,[k]:v}))
-  const handle = () => { onSave({...form, id:initial?.id||Date.now(), dramas:initial?.dramas||0, active:initial?.active??true}); onClose() }
+
+  useEffect(() => { if (open) setForm(initial || { name:'', display_order:0 }) }, [open, initial])
+
+  const handle = async () => {
+    setSaving(true)
+    try {
+      if (isEdit) {
+        const { data } = await categoriesApi.update(initial.id, { name: form.name, display_order: parseInt(form.display_order) || 0 })
+        onSave(data)
+      } else {
+        const { data } = await categoriesApi.create({ name: form.name, display_order: parseInt(form.display_order) || 0 })
+        onSave(data)
+      }
+      onClose()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to save category')
+    } finally { setSaving(false) }
+  }
   if(!open) return null
   return (
     <Modal open={open} onClose={onClose} title={isEdit?`Edit Category — ${initial.name}`:'New Category'} width={420}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={handle}>{isEdit?'Save Changes':'Create Category'}</button></>}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={handle} disabled={saving}>{saving?'Saving...':isEdit?'Save Changes':'Create Category'}</button></>}
     >
       <FormGroup label="Category name *">
         <input className="input" style={{ width:'100%' }} placeholder="e.g. Popular, New, Rankings" value={form.name} onChange={e=>upd('name',e.target.value)}/>
       </FormGroup>
       <FormGroup label="Display order">
-        <input className="input" type="number" placeholder="1" value={form.displayOrder} onChange={e=>upd('displayOrder',e.target.value)}/>
+        <input className="input" type="number" placeholder="1" value={form.display_order} onChange={e=>upd('display_order',e.target.value)}/>
       </FormGroup>
       <div style={{ fontSize:12, color:'var(--text3)', marginTop:8 }}>
         Categories appear as navbar tabs on the home screen (e.g. Popular, New, Rankings, Anime, VIP). Shows are assigned to one category.
@@ -54,44 +48,125 @@ function CategoryModal({ open, onClose, onSave, initial }) {
 function TagModal({ open, onClose, onSave, initial }) {
   const isEdit = !!initial?.id
   const [name, setName] = useState(initial?.name||'')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => { if (open) setName(initial?.name || '') }, [open, initial])
+
+  const handle = async () => {
+    setSaving(true)
+    try {
+      if (isEdit) {
+        const { data } = await tagsApi.update(initial.id, { name })
+        onSave(data)
+      } else {
+        const { data } = await tagsApi.create({ name, is_trending: false })
+        onSave(data)
+      }
+      onClose()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to save tag')
+    } finally { setSaving(false) }
+  }
   if(!open) return null
   return (
     <Modal open={open} onClose={onClose} title={isEdit?'Edit Tag':'New Tag'} width={380}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => { onSave({...initial, id:initial?.id||Date.now(), name, count:initial?.count||0, trending:initial?.trending||false}); onClose() }}>{isEdit?'Save':'Create Tag'}</button></>}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={handle} disabled={saving}>{saving?'Saving...':isEdit?'Save':'Create Tag'}</button></>}
     >
       <FormGroup label="Tag name *"><input className="input" style={{ width:'100%' }} placeholder="e.g. Strong Heroine, Billionaire" value={name} onChange={e=>setName(e.target.value)}/></FormGroup>
-      <div style={{ fontSize:12, color:'var(--text3)' }}>Tags are drama genre/type labels used for filtering and discovery on the Categories screen. One drama can have multiple tags.</div>
+      <div style={{ fontSize:12, color:'var(--text3)' }}>Tags are drama genre/type labels used for filtering and discovery. One drama can have multiple tags.</div>
     </Modal>
   )
 }
 
 export default function Categories() {
-  const [cats, setCats] = useState(initCategories)
-  const [tags, setTags] = useState(initTags)
+  const [cats, setCats] = useState([])
+  const [tags, setTags] = useState([])
+  const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
   const [selected, setSelected] = useState(null)
   const [confirm, setConfirm] = useState(null)
 
-  const toggleActive = id => setCats(p=>p.map(c=>c.id===id?{...c,active:!c.active}:c))
-  const toggleTrending = id => setTags(p=>p.map(t=>t.id===id?{...t,trending:!t.trending}:t))
-  const moveCategory = (idx,dir) => {
-    const arr=[...cats].sort((a,b)=>a.displayOrder-b.displayOrder)
-    const sw=idx+dir
-    if(sw<0||sw>=arr.length) return
-    ;[arr[idx].displayOrder,arr[sw].displayOrder]=[arr[sw].displayOrder,arr[idx].displayOrder]
-    setCats([...arr])
-  }
-  const saveCat = data => setCats(p=>p.find(c=>c.id===data.id)?p.map(c=>c.id===data.id?data:c):[...p,data])
-  const saveTag = data => setTags(p=>p.find(t=>t.id===data.id)?p.map(t=>t.id===data.id?data:t):[...p,data])
-  const deleteCat = id => { setCats(p=>p.filter(c=>c.id!==id)); setConfirm(null) }
-  const deleteTag = id => { setTags(p=>p.filter(t=>t.id!==id)); setConfirm(null) }
+  // Fetch data on mount
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      try {
+        const [catRes, tagRes] = await Promise.all([categoriesApi.getAll(), tagsApi.getAll()])
+        setCats(catRes.data.map(c => ({ ...c, dramas: c._count?.shows || 0, active: c.is_active, displayOrder: c.display_order })))
+        setTags(tagRes.data.map(t => ({ ...t, count: t._count?.show_tags || 0, trending: t.is_trending })))
+      } catch (err) {
+        console.error('Failed to load:', err)
+      } finally { setLoading(false) }
+    }
+    load()
+  }, [])
 
-  const sortedCats = [...cats].sort((a,b)=>a.displayOrder-b.displayOrder)
+  const toggleActive = async (id) => {
+    const cat = cats.find(c => c.id === id)
+    try {
+      await categoriesApi.update(id, { is_active: !cat.active })
+      setCats(p => p.map(c => c.id === id ? { ...c, active: !c.active } : c))
+    } catch (err) { alert('Failed to update') }
+  }
+
+  const toggleTrending = async (id) => {
+    const tag = tags.find(t => t.id === id)
+    try {
+      await tagsApi.update(id, { is_trending: !tag.trending })
+      setTags(p => p.map(t => t.id === id ? { ...t, trending: !t.trending } : t))
+    } catch (err) { alert('Failed to update') }
+  }
+
+  const saveCat = (data) => {
+    setCats(p => {
+      const exists = p.find(c => c.id === data.id)
+      if (exists) return p.map(c => c.id === data.id ? { ...data, dramas: c.dramas, active: data.is_active, displayOrder: data.display_order } : c)
+      return [...p, { ...data, dramas: 0, active: data.is_active ?? true, displayOrder: data.display_order || p.length + 1 }]
+    })
+  }
+
+  const saveTag = (data) => {
+    setTags(p => {
+      const exists = p.find(t => t.id === data.id)
+      if (exists) return p.map(t => t.id === data.id ? { ...data, count: t.count, trending: data.is_trending } : t)
+      return [...p, { ...data, count: 0, trending: data.is_trending ?? false }]
+    })
+  }
+
+  const deleteCat = async (id) => {
+    try {
+      await categoriesApi.delete(id)
+      setCats(p => p.filter(c => c.id !== id))
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete category')
+    }
+    setConfirm(null)
+  }
+
+  const deleteTag = async (id) => {
+    try {
+      await tagsApi.delete(id)
+      setTags(p => p.filter(t => t.id !== id))
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete tag')
+    }
+    setConfirm(null)
+  }
+
+  const sortedCats = [...cats].sort((a,b) => (a.displayOrder||0) - (b.displayOrder||0))
+
+  if (loading) {
+    return (
+      <div className="page-enter" style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'50vh' }}>
+        <Loader size={24} className="spin" style={{ color:'var(--accent2)' }}/>
+        <span style={{ marginLeft:10, color:'var(--text3)' }}>Loading categories & tags...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="page-enter">
       <div className="grid2">
-        {/* Categories (Navbar tabs) */}
         <div className="card">
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <div>
@@ -100,13 +175,9 @@ export default function Categories() {
             </div>
             <button className="btn btn-primary btn-sm" onClick={() => { setSelected(null); setModal('cat-add') }}><Plus size={12}/> New</button>
           </div>
-          {sortedCats.map((c,idx) => (
+          {sortedCats.map((c, idx) => (
             <div key={c.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
-              <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
-                <button className="icon-btn" onClick={() => moveCategory(idx,-1)} disabled={idx===0}><ChevronUp size={10}/></button>
-                <button className="icon-btn" onClick={() => moveCategory(idx,1)} disabled={idx===sortedCats.length-1}><ChevronDown size={10}/></button>
-              </div>
-              <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', width:16, textAlign:'center' }}>{c.displayOrder}</div>
+              <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', width:20, textAlign:'center' }}>{c.displayOrder}</div>
               <div style={{ flex:1 }}>
                 <div style={{ fontWeight:500, fontSize:13 }}>{c.name}</div>
                 <div style={{ fontSize:11, color:'var(--text3)' }}>{c.dramas} dramas</div>
@@ -123,7 +194,6 @@ export default function Categories() {
           ))}
         </div>
 
-        {/* Tags (Drama genre/type labels) */}
         <div>
           <div className="card" style={{ marginBottom:14 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
@@ -145,14 +215,13 @@ export default function Categories() {
               ))}
             </div>
           </div>
-
           <div className="card">
             <div className="card-title">Tag usage</div>
             {[...tags].sort((a,b)=>b.count-a.count).slice(0,8).map(t => (
               <div className="bar-row" key={t.id}>
                 <div className="bar-lbl">{t.name}</div>
                 <div className="bar-track">
-                  <div className="bar-fill" style={{ width:`${(t.count/tags[0].count)*100}%`, background:t.trending?'var(--amber)':'var(--accent)' }}/>
+                  <div className="bar-fill" style={{ width:`${tags[0]?.count ? (t.count/tags[0].count)*100 : 0}%`, background:t.trending?'var(--amber)':'var(--accent)' }}/>
                 </div>
                 <div className="bar-val">{t.count}</div>
               </div>
@@ -166,7 +235,7 @@ export default function Categories() {
       <TagModal open={modal==='tag-add'} onClose={() => setModal(null)} onSave={saveTag} initial={null}/>
       <TagModal open={modal==='tag-edit'} onClose={() => setModal(null)} onSave={saveTag} initial={selected}/>
       <ConfirmDialog open={!!confirm} danger title={`Delete ${confirm?.type==='cat'?'Category':'Tag'}`}
-        message={`Remove "${confirm?.name}"? ${confirm?.type==='cat'?'All dramas will be unmapped from this category.':'Tag will be removed from all dramas.'}`}
+        message={`Remove "${confirm?.name}"? ${confirm?.type==='cat'?'All dramas will be unmapped.':'Tag will be removed from all dramas.'}`}
         onConfirm={() => confirm?.type==='cat'?deleteCat(confirm.id):deleteTag(confirm.id)}
         onCancel={() => setConfirm(null)}
       />
