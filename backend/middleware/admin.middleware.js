@@ -12,12 +12,12 @@ function requireAdmin(section = null) {
       const token = header.split(' ')[1];
       const decoded = verifyAccessToken(token);
 
-      if (decoded.role !== 'admin' && decoded.role !== 'sub_admin') {
+      if (decoded.role !== 'ADMIN' && decoded.role !== 'SUB_ADMIN') {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
       // Admin has full access
-      if (decoded.role === 'admin') {
+      if (decoded.role === 'ADMIN') {
         req.admin = decoded;
         return next();
       }

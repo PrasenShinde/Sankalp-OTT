@@ -13,7 +13,7 @@ function devAdmin(section = null) {
       try {
         const token = header.split(' ')[1];
         const decoded = verifyAccessToken(token);
-        if (decoded.role !== 'admin' && decoded.role !== 'sub_admin') {
+        if (decoded.role !== 'ADMIN' && decoded.role !== 'SUB_ADMIN') {
           return res.status(403).json({ error: 'Admin access required' });
         }
         req.admin = decoded;
@@ -25,7 +25,7 @@ function devAdmin(section = null) {
 
     // No token — in development, auto-inject admin
     if (config.nodeEnv === 'development') {
-      const admin = await prisma.user.findFirst({ where: { role: 'admin' } });
+      const admin = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
       if (admin) {
         req.admin = { id: admin.id, email: admin.email, role: admin.role };
         return next();
