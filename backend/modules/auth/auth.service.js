@@ -9,11 +9,11 @@ const prisma = getPrismaClient();
 // JWT configuration
 const JWT_CONFIG = {
   access: {
-    secret: process.env.JWT_ACCESS_SECRET || 'your-access-secret-key',
+    secret: process.env.JWT_SECRET || 'dev-jwt-secret-change-in-production-abc123xyz',
     expiresIn: '15m'
   },
   refresh: {
-    secret: process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key',
+    secret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change-in-production-789def',
     expiresIn: '7d'
   }
 };
