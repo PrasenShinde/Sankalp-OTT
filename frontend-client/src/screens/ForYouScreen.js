@@ -101,7 +101,7 @@ function ReelItem({ item }) {
           resizeMode="cover"
           isLooping
           shouldPlay   // ✅ auto play
-          isMuted={false}
+          isMuted={true}
         />
 
         {!isPlaying && (

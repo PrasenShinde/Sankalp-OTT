@@ -2,6 +2,7 @@ import React from 'react';
 import { FlatList, StyleSheet, Text, View, Pressable, Dimensions, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -72,8 +73,10 @@ const MOCK_SAVED = [
 ];
 
 export default function MyListScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { paddingTop: insets.top + 12 }]}>
       <View style={styles.header}>
         <Text style={styles.title}>My List</Text>
         <View style={styles.countBadge}>
@@ -137,7 +140,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.deepBlack,
     paddingHorizontal: 16,
-    paddingTop: 20,
   },
   header: {
     flexDirection: 'row',
