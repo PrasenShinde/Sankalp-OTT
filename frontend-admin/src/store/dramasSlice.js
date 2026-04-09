@@ -138,6 +138,37 @@ export const createDrama = createAsyncThunk(
       const show = showRes.data
       console.log('Show created:', show.id)
 
+      // Upload thumbnail if provided
+      if (formData.thumbnailFile) {
+        try {
+          console.log('Uploading thumbnail for show:', show.id)
+          
+          // Create FormData and upload through backend
+          const thumbFormData = new FormData()
+          thumbFormData.append('image', formData.thumbnailFile)
+          thumbFormData.append('type', 'thumbnail')
+          thumbFormData.append('entity_id', show.id)
+          
+          const uploadRes = await fetch('http://localhost:3000/api/media/upload/image', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+            },
+            body: thumbFormData
+          })
+          
+          if (!uploadRes.ok) {
+            const err = await uploadRes.json()
+            throw new Error(err.error || err.message || `Upload failed: ${uploadRes.status}`)
+          }
+          
+          console.log('Thumbnail uploaded successfully for show:', show.id)
+        } catch (thumbErr) {
+          console.error('Thumbnail upload failed:', thumbErr)
+          throw new Error(`Thumbnail upload failed: ${thumbErr.message}`)
+        }
+      }
+
       await createNewEpisodes(show.id, formData.episodes || [], [])
 
       // Reload to get fresh data from server
@@ -168,6 +199,37 @@ export const updateDrama = createAsyncThunk(
         is_featured_for_you: formData.is_featured_for_you || false,
         is_active:           formData.status === 'Published',
       })
+
+      // Upload thumbnail if provided
+      if (formData.thumbnailFile) {
+        try {
+          console.log('Uploading thumbnail for show:', id)
+          
+          // Create FormData and upload through backend
+          const thumbFormData = new FormData()
+          thumbFormData.append('image', formData.thumbnailFile)
+          thumbFormData.append('type', 'thumbnail')
+          thumbFormData.append('entity_id', id)
+          
+          const uploadRes = await fetch('http://localhost:3000/api/media/upload/image', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+            },
+            body: thumbFormData
+          })
+          
+          if (!uploadRes.ok) {
+            const err = await uploadRes.json()
+            throw new Error(err.error || err.message || `Upload failed: ${uploadRes.status}`)
+          }
+          
+          console.log('Thumbnail uploaded successfully for show:', id)
+        } catch (thumbErr) {
+          console.error('Thumbnail upload failed:', thumbErr)
+          throw new Error(`Thumbnail upload failed: ${thumbErr.message}`)
+        }
+      }
 
       const existingDrama = dramas.find(d => d.id === id)
       const existingEpIds = (existingDrama?.episodes || []).map(e => e.id)
