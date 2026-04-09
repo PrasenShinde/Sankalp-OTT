@@ -16,23 +16,32 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COLUMN_WIDTH = (SCREEN_WIDTH - 32) / 3; // 3 columns with padding
 
-// Mock data matching the UI titles/stats
+// Local thumbnails
+const thumbnails = [
+  require('../../assets/pic_01.jpg'),
+  require('../../assets/pic_02.jpg'),
+  require('../../assets/pic_03.jpg'),
+  require('../../assets/pic_04.jpg'),
+  require('../../assets/pic_05.jpg'),
+];
+
+// Mock data matching the UI titles/stats (now using local images)
 const DATA = [
-  { id: '1', title: 'Sleeping with My Ex Husband\'s Son', views: '3.5M', tag: null, category: 'Age-Gap Love', image: 'https://placeholder.com/150' },
-  { id: '2', title: 'This Letter To You Is My Last', views: '14.6M', tag: 'Hot', category: 'All-Too-Late', image: 'https://placeholder.com/150' },
-  { id: '3', title: 'Run into the CEO\'s Secret Playroom', views: '68.8M', tag: 'Hot', category: 'Billionaire', image: 'https://placeholder.com/150' },
-  { id: '4', title: 'Daddy Dominant\'s Good Girl', views: '158M', tag: 'Hot', category: 'Age-Gap Love', image: 'https://placeholder.com/150' },
-  { id: '5', title: 'Baby Wants Her Hockey Daddy', views: '1.4M', tag: 'New', category: 'Athlete', image: 'https://placeholder.com/150' },
-  { id: '6', title: 'Too Wild to Love', views: '12.3M', tag: null, category: 'Family Bonds', image: 'https://placeholder.com/150' },
+  { id: '1', title: 'Sleeping with My Ex Husband\'s Son', views: '3.5M', tag: null, category: 'Age-Gap Love', image: thumbnails[0] },
+  { id: '2', title: 'This Letter To You Is My Last', views: '14.6M', tag: 'Hot', category: 'All-Too-Late', image: thumbnails[1] },
+  { id: '3', title: 'Run into the CEO\'s Secret Playroom', views: '68.8M', tag: 'Hot', category: 'Billionaire', image: thumbnails[2] },
+  { id: '4', title: 'Daddy Dominant\'s Good Girl', views: '158M', tag: 'Hot', category: 'Age-Gap Love', image: thumbnails[3] },
+  { id: '5', title: 'Baby Wants Her Hockey Daddy', views: '1.4M', tag: 'New', category: 'Athlete', image: thumbnails[4] },
+  { id: '6', title: 'Too Wild to Love', views: '12.3M', tag: null, category: 'Family Bonds', image: thumbnails[0] },
+  { id: '7', title: 'Boss for a Baby', views: '8.7M', tag: 'Hot', category: 'Boss Romance', image: thumbnails[1] },
+  { id: '8', title: 'Cheer Up', views: '2.1M', tag: 'New', category: 'Young Adult', image: thumbnails[2] },
+  { id: '9', title: 'The Scars You Carved', views: '5.4M', tag: null, category: 'DramaBox Exclusive', image: thumbnails[3] },
 ];
 
 const DramaCard = ({ item }) => (
   <TouchableOpacity style={styles.cardContainer}>
     <View style={styles.imageWrapper}>
-      {/* Poster Placeholder */}
-      <View style={styles.posterPlaceholder}>
-        <Ionicons name="image-outline" size={40} color="#333" />
-      </View>
+      <Image style={styles.posterImage} source={item.image} resizeMode="cover" />
 
       {/* Top Left Tag (Hot/New) */}
       {item.tag && (
@@ -92,7 +101,7 @@ export default function PopularScreen() {
       />
 
       {/* Floating Continue Banner */}
-      <View style={[styles.continueBanner, { bottom: insets.bottom + 10 }]}>
+      {/* <View style={[styles.continueBanner, { bottom: insets.bottom + 10 }]}>
         <Image style={styles.bannerThumb} source={{ uri: 'https://placeholder.com/50' }} />
         <View style={styles.bannerInfo}>
           <Text style={styles.bannerTitle} numberOfLines={1}>No Escape From The Mafia King's Embr...</Text>
@@ -102,7 +111,7 @@ export default function PopularScreen() {
           <Text style={styles.continueBtnText}>Continue</Text>
         </TouchableOpacity>
         <Ionicons name="close" size={20} color="#666" style={{ marginLeft: 8 }} />
-      </View>
+      </View> */}
     </View>
   );
 }
@@ -185,10 +194,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1A1A',
     position: 'relative',
   },
-  posterPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  posterImage: {
+    width: '100%',
+    height: '100%',
   },
   statusTag: {
     position: 'absolute',
