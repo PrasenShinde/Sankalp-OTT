@@ -86,6 +86,21 @@ export const hashRefreshToken = async (token) => {
 };
 
 /**
+ * Verify stored refresh token matches the provided token
+ * @param {string} token - Plain refresh token from request
+ * @param {string} storedHash - Hashed refresh token from database
+ * @returns {Promise<boolean>} true if tokens match
+ */
+export const verifyStoredRefreshToken = async (token, storedHash) => {
+  try {
+    return await bcrypt.compare(token, storedHash);
+  } catch (error) {
+    logger.error('Error verifying stored refresh token', { error: error.message });
+    throw new ApiError(500, 'Failed to verify refresh token');
+  }
+};
+
+/**
  * Register new user
  */
 export const registerUser = async (userData) => {

@@ -1,5 +1,6 @@
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
+import logger from '../config/logger.js';
 
 class AppError extends Error {
   constructor(message, statusCode) {
@@ -9,15 +10,34 @@ class AppError extends Error {
 }
 
 const errorHandler = (err, req, res, next) => {
+  const timestamp = new Date().toISOString();
+  const method = req.method;
+  const path = req.path;
+  
+  // Log error with full details
   console.error(
-    `[${new Date().toISOString()}] ${req.method} ${req.path}:`,
-    err.message
+    `[${timestamp}] ${method} ${path}:`,
+    {
+      message: err.message,
+      statusCode: err.statusCode || 500,
+      stack: err.stack,
+    }
   );
+
+  logger.error(`[${timestamp}] ${method} ${path} - Error:`, {
+    message: err.message,
+    statusCode: err.statusCode || 500,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+  });
 
   // Check if it's an ApiError instance
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json(
-      new ApiResponse(err.statusCode, null, err.message)
+      new ApiResponse(
+        err.statusCode,
+        process.env.NODE_ENV === 'development' ? { error: err.message, details: err } : null,
+        err.message
+      )
     );
   }
 
@@ -48,12 +68,36 @@ const errorHandler = (err, req, res, next) => {
     );
   }
 
-  // 4. Default (main system)
+  // 4. JWT Errors
+  if (err.name === 'JsonWebTokenError') {
+    return res.status(401).json(
+      new ApiResponse(401, null, 'Invalid token')
+    );
+  }
+
+  if (err.name === 'TokenExpiredError') {
+    return res.status(401).json(
+      new ApiResponse(401, null, 'Token expired')
+    );
+  }
+
+  // 5. Default (main system)
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
 
+  const errorResponse = {
+    statusCode,
+    message,
+  };
+
+  // In development, include error details
+  if (process.env.NODE_ENV === 'development') {
+    errorResponse.details = err.message;
+    errorResponse.stack = err.stack;
+  }
+
   return res.status(statusCode).json(
-    new ApiResponse(statusCode, null, message)
+    new ApiResponse(statusCode, errorResponse, message)
   );
 };
 

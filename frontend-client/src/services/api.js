@@ -1,6 +1,13 @@
 import axios from 'axios';
 import * as authService from './authService';
 
+// ✅ Import Redux actions - MUST be done this way to use proper action creators
+let authActions = null;
+
+export const setAuthActions = (actions) => {
+  authActions = actions;
+};
+
 /**
  * =====================================================
  * REQUEST QUEUE SYSTEM (Handle 401 Race Conditions)
@@ -47,7 +54,7 @@ const requestQueue = new RequestQueue();
  */
 
 export const api = axios.create({
-  baseURL: 'http://172.31.56.30:5000/api/v1',
+  baseURL: 'http://10.52.219.61:3000/api/v1',
   headers: {
     'Content-Type': 'application/json',
     'x-client-type': authService.getClientType(),
@@ -100,12 +107,17 @@ api.interceptors.request.use(
 
 // Create a separate axios instance for refresh calls (bypass interceptors)
 const refreshApi = axios.create({
-  baseURL: 'http://172.31.56.30:5000/api/v1',
+  baseURL: 'http://10.52.219.61:3000/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
+/**
+ * ⚠️ TEMPORARILY DISABLED - TO DEBUG
+ * Uncomment below to re-enable token refresh interceptor
+ */
+/*
 api.interceptors.response.use(
   (response) => {
     return response;
@@ -123,9 +135,7 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    /**
-     * If already refreshing, queue this request
-     */
+    // If already refreshing, queue this request
     if (requestQueue.isRefreshing) {
       return new Promise((resolve, reject) => {
         requestQueue.add({
@@ -140,9 +150,7 @@ api.interceptors.response.use(
       });
     }
 
-    /**
-     * First 401: attempt refresh
-     */
+    // First 401: attempt refresh
     requestQueue.isRefreshing = true;
 
     try {
@@ -163,15 +171,12 @@ api.interceptors.response.use(
       const { accessToken, refreshToken: newRefreshToken } = response.data.data;
 
       // Update tokens in storage and Redux
-      if (store) {
+      if (store && authActions) {
         // Save tokens via authService (refreshToken goes to SecureStore)
         await authService.saveTokens(accessToken, newRefreshToken);
 
-        // Dispatch Redux action to update state (ONLY accessToken, refreshToken never in Redux)
-        store.dispatch({
-          type: 'auth/setTokens',
-          payload: { accessToken },
-        });
+        // ✅ Dispatch Redux action using proper action creator (not raw type string)
+        store.dispatch(authActions.setTokens({ accessToken }));
       }
 
       // Update original request with new token
@@ -187,10 +192,9 @@ api.interceptors.response.use(
       console.error('[API Interceptor] Token refresh failed:', refreshError);
 
       // Logout user on refresh failure
-      if (store) {
-        store.dispatch({
-          type: 'auth/logout',
-        });
+      if (store && authActions) {
+        // ✅ Dispatch Redux action using proper action creator (not raw type string)
+        store.dispatch(authActions.logout());
       }
 
       // Reject all queued requests
@@ -200,5 +204,6 @@ api.interceptors.response.use(
     }
   }
 );
+*/
 
 
