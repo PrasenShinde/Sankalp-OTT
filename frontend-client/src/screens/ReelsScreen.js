@@ -14,7 +14,7 @@ import { Ionicons,FontAwesome6 } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
-import DramaDetailsSheet from '../components/DramaDetailsSheet';
+import DramaDetailsSheetConnected from '../components/DramaDetailsSheetConnected';
 import { ROUTES } from '../constants/routes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -138,7 +138,7 @@ export default function PopularScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      <DramaDetailsSheet visible={sheetVisible} item={selected} onClose={closeDetails} />
+      <DramaDetailsSheetConnected visible={sheetVisible} item={selected} onClose={closeDetails} />
     </View>
   );
 }
